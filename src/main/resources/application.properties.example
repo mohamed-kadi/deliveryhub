@@ -1,0 +1,21 @@
+# application.properties.example
+# Rename this file to 'application.properties' and fill in your own values
+
+# ========================
+# === Database Config ===
+# ========================
+spring.datasource.url=jdbc:postgresql://localhost:5432/deliveryhub
+spring.datasource.username=YOUR_DB_USERNAME
+spring.datasource.password=YOUR_DB_PASSWORD
+
+# ========================
+# === JPA Config ===
+# ========================
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# ========================
+# === JWT Config ===
+# ========================
+jwt.secret=YOUR_SECRET_KEY
+jwt.expiration=86400000
