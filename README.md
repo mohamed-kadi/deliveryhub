@@ -23,7 +23,9 @@ A Spring Boot project to connect customers in Europe with transporters for sendi
 - View available delivery requests
 - Accept delivery requests
 - View assigned deliveries
-- Update delivery status (soon)
+- Update delivery status (PICKED_UP, DELIVERED)
+- Track delivery requests with optional status filtering
+
 
 ### 📦 Customers
 - Submit delivery requests
@@ -32,12 +34,27 @@ A Spring Boot project to connect customers in Europe with transporters for sendi
 ### 👨‍💼 Admins
 - Approve pending transporter accounts
 
+## 🛰️ Delivery Tracking
+
+Customers can view all their delivery requests using:
+ ### Example Endpoints:
+ ```http
+ GET /api/deliveries/track
+ They can also filter by status:
+ GET /api/deliveries/track?status=DELIVERED
+ ```
+
 ## ⚙️ Tech Stack
 - Java 17
 - Spring Boot
 - PostgreSQL
 - Maven
 - JWT (JSON Web Token) for Authentication
+
+## 🔒 Security Note
+
+Make sure `src/main/resources/application.properties` is excluded from Git and not pushed to the repository. Use `application.properties.example` to share safe default configurations.
+
 
 ## 🛠️ Setup
 
