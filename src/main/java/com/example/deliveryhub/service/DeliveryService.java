@@ -162,6 +162,54 @@ public class DeliveryService {
         );
     }
     
+    public List<DeliveryResponseDTO> trackCustomerDeliveries() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    
+        List<DeliveryRequest> requests = deliveryRequestRepository.findByCustomerAndStatusIn(customer, List.of("ASSIGNED", "PICKED_UP", "DELIVERED"));
+    
+        return requests.stream()
+                .map(req -> new DeliveryResponseDTO(
+                        req.getId(),
+                        req.getPickupCity(),
+                        req.getDropoffCity(),
+                        req.getItemType(),
+                        req.getDescription(),
+                        req.getPickupDate(),
+                        req.getStatus(),
+                        req.getCustomer().getEmail()
+                ))
+                .toList();
+    }
+
+    public List<DeliveryResponseDTO> trackCustomerDeliveries(String status) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    
+        List<DeliveryRequest> requests;
+    
+        if (status != null && !status.isEmpty()) {
+            requests = deliveryRequestRepository.findByCustomerAndStatus(customer, status.toUpperCase());
+        } else {
+            requests = deliveryRequestRepository.findByCustomer(customer);
+        }
+    
+        return requests.stream()
+                .map(req -> new DeliveryResponseDTO(
+                        req.getId(),
+                        req.getPickupCity(),
+                        req.getDropoffCity(),
+                        req.getItemType(),
+                        req.getDescription(),
+                        req.getPickupDate(),
+                        req.getStatus(),
+                        req.getCustomer().getEmail()))
+                .toList();
+    }
+    
+    
     
     
 }

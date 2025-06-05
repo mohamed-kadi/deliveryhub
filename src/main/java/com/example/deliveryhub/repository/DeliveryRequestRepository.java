@@ -18,4 +18,9 @@ public interface DeliveryRequestRepository extends  JpaRepository<DeliveryReques
     
     List<DeliveryRequest> findByTransporterAndStatus(User transporter, String status);
 
+    List<DeliveryRequest> findByCustomerAndStatusIn(User customer, List<String> of);
+
+    List<DeliveryRequest> findByCustomerAndStatus(User customer, String status);
+
+
 }
