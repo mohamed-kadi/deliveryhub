@@ -1,17 +1,14 @@
 package com.example.deliveryhub.service;
 
 import java.util.List;
-
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import com.example.deliveryhub.dto.DeliveryRequestDTO;
 import com.example.deliveryhub.dto.DeliveryResponseDTO;
 import com.example.deliveryhub.model.DeliveryRequest;
 import com.example.deliveryhub.model.User;
 import com.example.deliveryhub.repository.DeliveryRequestRepository;
 import com.example.deliveryhub.repository.UserRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,7 +42,8 @@ public class DeliveryService {
                 saved.getDescription(),
                 saved.getPickupDate(),
                 saved.getStatus(),
-                saved.getCustomer().getEmail());
+                saved.getCustomer().getEmail(),
+                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null);
     }
     
     public List<DeliveryResponseDTO> getMyRequests() {
@@ -64,7 +62,8 @@ public class DeliveryService {
                         req.getDescription(),
                         req.getPickupDate(),
                         req.getStatus(),
-                        req.getCustomer().getEmail()))
+                        req.getCustomer().getEmail(),
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null))
                 .toList();
     }
     
@@ -79,7 +78,8 @@ public class DeliveryService {
                 req.getDescription(),
                 req.getPickupDate(),
                 req.getStatus(),
-                req.getCustomer().getEmail())).toList();
+                req.getCustomer().getEmail(),
+                req.getTransporter() != null ? req.getTransporter().getEmail() : null)).toList();
     }
     
     public DeliveryResponseDTO acceptRequest(Long id) {
@@ -103,7 +103,8 @@ public class DeliveryService {
                 saved.getDescription(),
                 saved.getPickupDate(),
                 saved.getStatus(),
-                saved.getCustomer().getEmail());
+                saved.getCustomer().getEmail(),
+                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null );
     }
     
     public List<DeliveryResponseDTO> getAssignedDeliveries() {
@@ -122,7 +123,8 @@ public class DeliveryService {
                         req.getDescription(),
                         req.getPickupDate(),
                         req.getStatus(),
-                        req.getCustomer().getEmail()
+                        req.getCustomer().getEmail(),
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null
                 ))
                 .toList();
     }
@@ -158,7 +160,8 @@ public class DeliveryService {
                 updated.getDescription(),
                 updated.getPickupDate(),
                 updated.getStatus(),
-                updated.getCustomer().getEmail()
+                updated.getCustomer().getEmail(),
+                updated.getTransporter() != null ? updated.getTransporter().getEmail() : null
         );
     }
     
@@ -178,7 +181,9 @@ public class DeliveryService {
                         req.getDescription(),
                         req.getPickupDate(),
                         req.getStatus(),
-                        req.getCustomer().getEmail()
+                        req.getCustomer().getEmail(),
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null
+
                 ))
                 .toList();
     }
@@ -205,11 +210,10 @@ public class DeliveryService {
                         req.getDescription(),
                         req.getPickupDate(),
                         req.getStatus(),
-                        req.getCustomer().getEmail()))
+                        req.getCustomer().getEmail(),
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null))
                 .toList();
     }
-    
-    
     
     
 }

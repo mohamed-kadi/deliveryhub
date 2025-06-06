@@ -1,6 +1,8 @@
 package com.example.deliveryhub.controller;
 
 import java.util.List;
+
+import com.example.deliveryhub.dto.AdminDeliveryViewDTO;
 import com.example.deliveryhub.dto.TransporterAdminDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +33,8 @@ public class AdminController {
         return ResponseEntity.ok(adminService.verifyTransporter(id));
     }
 
-    
-
+    @GetMapping("/deliveries")
+    public ResponseEntity<List<AdminDeliveryViewDTO>> viewAllDeliveries() {
+        return ResponseEntity.ok(adminService.getAllDeliveries());
+   }
 }

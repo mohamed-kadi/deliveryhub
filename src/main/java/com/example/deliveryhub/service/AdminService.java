@@ -5,8 +5,10 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.example.deliveryhub.dto.AdminDeliveryViewDTO;
 import com.example.deliveryhub.dto.TransporterAdminDTO;
 import com.example.deliveryhub.model.Role;
+import com.example.deliveryhub.repository.DeliveryRequestRepository;
 import com.example.deliveryhub.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -15,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminService {
     private final UserRepository userRepository;
-
+     private final DeliveryRequestRepository deliveryRequestRepository;
     public List<TransporterAdminDTO> getPendingTransporters() {
         return userRepository.findByRoleAndVerifiedFalse(Role.TRANSPORTER)
                 .stream()
@@ -54,4 +56,19 @@ public class AdminService {
 
         return dto;
     }
+
+    public List<AdminDeliveryViewDTO> getAllDeliveries() {
+        return deliveryRequestRepository.findAll().stream().map(req -> {
+            AdminDeliveryViewDTO dto = new AdminDeliveryViewDTO();
+            dto.setId(req.getId());
+            dto.setPickupCity(req.getPickupCity());
+            dto.setDropoffCity(req.getDropoffCity());
+            dto.setItemType(req.getItemType());
+            dto.setStatus(req.getStatus());
+            dto.setCustomerName(req.getCustomer() != null ? req.getCustomer().getFullName() : "N/A");
+            dto.setTransporterName(req.getTransporter() != null ? req.getTransporter().getFullName() : "Unassigned");
+                return dto;
+    }).toList();
+}
+
 }

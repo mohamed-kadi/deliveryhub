@@ -21,4 +21,7 @@ public class DeliveryResponseDTO {
     private LocalDate pickupDate;
     private String status;
     private String customerEmail;
+    private String transportEmail;
 }
+
+
