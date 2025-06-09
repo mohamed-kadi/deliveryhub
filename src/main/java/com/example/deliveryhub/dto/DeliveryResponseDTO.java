@@ -22,6 +22,7 @@ public class DeliveryResponseDTO {
     private String status;
     private String customerEmail;
     private String transportEmail;
+    private String cancelReason;
 }
 
 

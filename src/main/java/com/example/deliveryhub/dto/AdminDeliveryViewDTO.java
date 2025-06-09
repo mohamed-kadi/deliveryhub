@@ -11,5 +11,6 @@ public class AdminDeliveryViewDTO {
     private String status;
     private String customerName;
     private String transporterName;
+    
 
 }

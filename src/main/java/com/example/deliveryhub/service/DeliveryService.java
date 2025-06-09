@@ -1,5 +1,6 @@
 package com.example.deliveryhub.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,8 @@ public class DeliveryService {
                 saved.getPickupDate(),
                 saved.getStatus(),
                 saved.getCustomer().getEmail(),
-                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null);
+                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null,
+                saved.getCancelReason());
     }
     
     public List<DeliveryResponseDTO> getMyRequests() {
@@ -63,7 +65,8 @@ public class DeliveryService {
                         req.getPickupDate(),
                         req.getStatus(),
                         req.getCustomer().getEmail(),
-                        req.getTransporter() != null ? req.getTransporter().getEmail() : null))
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null, 
+                        req.getCancelReason()))
                 .toList();
     }
     
@@ -79,7 +82,8 @@ public class DeliveryService {
                 req.getPickupDate(),
                 req.getStatus(),
                 req.getCustomer().getEmail(),
-                req.getTransporter() != null ? req.getTransporter().getEmail() : null)).toList();
+                req.getTransporter() != null ? req.getTransporter().getEmail() : null,
+                req.getCancelReason())).toList();
     }
     
     public DeliveryResponseDTO acceptRequest(Long id) {
@@ -104,7 +108,9 @@ public class DeliveryService {
                 saved.getPickupDate(),
                 saved.getStatus(),
                 saved.getCustomer().getEmail(),
-                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null );
+                saved.getTransporter() != null ? saved.getTransporter().getEmail() : null,
+                saved.getCancelReason()
+                );
     }
     
     public List<DeliveryResponseDTO> getAssignedDeliveries() {
@@ -124,7 +130,9 @@ public class DeliveryService {
                         req.getPickupDate(),
                         req.getStatus(),
                         req.getCustomer().getEmail(),
-                        req.getTransporter() != null ? req.getTransporter().getEmail() : null
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null,
+                        req.getCancelReason()
+                        
                 ))
                 .toList();
     }
@@ -148,6 +156,13 @@ public class DeliveryService {
         if (newStatus.equals("DELIVERED") && !request.getStatus().equals("PICKED_UP")) {
             throw new RuntimeException("Invalid status transition");
         }
+
+        // ✅ Record timestamps
+        if (newStatus.equals("ASSIGNED")) {
+          request.setAssignedAt(LocalDateTime.now());
+        } else if (newStatus.equals("DELIVERED")) {
+          request.setDeliveredAt(LocalDateTime.now()); // You can rename this to deliveredAt if you want more clarity
+        }
     
         request.setStatus(newStatus);
         DeliveryRequest updated = deliveryRequestRepository.save(request);
@@ -161,7 +176,8 @@ public class DeliveryService {
                 updated.getPickupDate(),
                 updated.getStatus(),
                 updated.getCustomer().getEmail(),
-                updated.getTransporter() != null ? updated.getTransporter().getEmail() : null
+                updated.getTransporter() != null ? updated.getTransporter().getEmail() : null,
+                updated.getCancelReason()
         );
     }
     
@@ -182,9 +198,8 @@ public class DeliveryService {
                         req.getPickupDate(),
                         req.getStatus(),
                         req.getCustomer().getEmail(),
-                        req.getTransporter() != null ? req.getTransporter().getEmail() : null
-
-                ))
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null,
+                        req.getCancelReason()))
                 .toList();
     }
 
@@ -211,9 +226,34 @@ public class DeliveryService {
                         req.getPickupDate(),
                         req.getStatus(),
                         req.getCustomer().getEmail(),
-                        req.getTransporter() != null ? req.getTransporter().getEmail() : null))
+                        req.getTransporter() != null ? req.getTransporter().getEmail() : null,
+                        req.getCancelReason()))
                 .toList();
     }
+
+    public DeliveryResponseDTO cancelDelivery(Long id, String reason) {
+        DeliveryRequest delivery = deliveryRequestRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Delivery not found"));
+    
+        delivery.setStatus("CANCELLED");
+        delivery.setCancelReason(reason);
+    
+        deliveryRequestRepository.save(delivery);
+    
+        return new DeliveryResponseDTO(
+            delivery.getId(),
+            delivery.getPickupCity(),
+            delivery.getDropoffCity(),
+            delivery.getItemType(),
+            delivery.getDescription(),
+            delivery.getPickupDate(),
+            delivery.getStatus(),
+            delivery.getCustomer().getEmail(),
+            delivery.getTransporter() != null ? delivery.getTransporter().getEmail() : null,
+            delivery.getCancelReason()
+        );
+    }
+    
     
     
 }

@@ -1,12 +1,30 @@
 package com.example.deliveryhub.service;
 
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.example.deliveryhub.dto.AdminDashboardDTO;
 import com.example.deliveryhub.dto.AdminDeliveryViewDTO;
+import com.example.deliveryhub.dto.CancelDeliveryRequest;
+import com.example.deliveryhub.dto.CancelledDeliveryDTO;
+import com.example.deliveryhub.dto.DailyDeliveryStatsDTO;
+import com.example.deliveryhub.dto.DeliveryResponseDTO;
+import com.example.deliveryhub.dto.DeliveryStatusPercentageDTO;
+import com.example.deliveryhub.dto.PendingDeliveryAgeDTO;
+import com.example.deliveryhub.dto.TimeRangeDeliveryCountDTO;
+import com.example.deliveryhub.dto.TopCityDTO;
+import com.example.deliveryhub.dto.TopRouteDTO;
+import com.example.deliveryhub.dto.TopTransporterDTO;
 import com.example.deliveryhub.dto.TransporterAdminDTO;
+import com.example.deliveryhub.dto.TransporterPerformanceDTO;
+import com.example.deliveryhub.enums.TimeRange;
+import com.example.deliveryhub.model.DeliveryRequest;
 import com.example.deliveryhub.model.Role;
 import com.example.deliveryhub.repository.DeliveryRequestRepository;
 import com.example.deliveryhub.repository.UserRepository;
@@ -17,7 +35,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminService {
     private final UserRepository userRepository;
-     private final DeliveryRequestRepository deliveryRequestRepository;
+    private final DeliveryRequestRepository deliveryRequestRepository;
+
     public List<TransporterAdminDTO> getPendingTransporters() {
         return userRepository.findByRoleAndVerifiedFalse(Role.TRANSPORTER)
                 .stream()
@@ -68,7 +87,131 @@ public class AdminService {
             dto.setCustomerName(req.getCustomer() != null ? req.getCustomer().getFullName() : "N/A");
             dto.setTransporterName(req.getTransporter() != null ? req.getTransporter().getFullName() : "Unassigned");
                 return dto;
-    }).toList();
-}
+        }).toList();
+    }
+
+    public AdminDashboardDTO getDashboardMetrics() {
+    long totalDeliveries = deliveryRequestRepository.count();
+    long totalCustomers = userRepository.countByRole(Role.CUSTOMER);
+    long totalTransporters = userRepository.countByRole(Role.TRANSPORTER);
+    long pendingDeliveries = deliveryRequestRepository.countByStatus("PENDING");
+    long assignedDeliveries = deliveryRequestRepository.countByStatus("ASSIGNED");
+    long pickedUpDeliveries = deliveryRequestRepository.countByStatus("PICKED_UP");
+    long deliveredDeliveries = deliveryRequestRepository.countByStatus("DELIVERED");
+
+        return new AdminDashboardDTO(
+            totalDeliveries,
+            totalCustomers,
+            totalTransporters,
+            pendingDeliveries,
+            assignedDeliveries,
+            pickedUpDeliveries,
+            deliveredDeliveries
+        );
+    }
+
+    public List<DailyDeliveryStatsDTO> getDailyDeliveryStats(LocalDate startDate) {
+        return deliveryRequestRepository.countDeliveriesByStatusPerDay(startDate);
+    }
+
+    public Map<String, Double> getDeliveryStatusPercentages() {
+    List<DeliveryStatusPercentageDTO> counts = deliveryRequestRepository.countDeliveriesByStatus();
+    long total = counts.stream().mapToLong(DeliveryStatusPercentageDTO::getCount).sum();
+
+    Map<String, Double> percentages = new HashMap<>();
+    for (DeliveryStatusPercentageDTO entry : counts) {
+        double percent = (entry.getCount() * 100.0) / total;
+        percentages.put(entry.getStatus(), Math.round(percent * 100.0) / 100.0); // rounded to 2 decimals
+       }
+
+       return percentages;
+    }
+
+    public List<TransporterPerformanceDTO> getTransporterPerformanceSummary() {
+        return deliveryRequestRepository.countDeliveriesPerTransporter();
+    }
+
+    public List<TopCityDTO> getTopPickupCities() {
+       return deliveryRequestRepository.findTopPickupCities();
+    }
+
+    public List<TopCityDTO> getTopDropoffCities() {
+       return deliveryRequestRepository.findTopDropoffCities();
+    }
+
+    public List<TimeRangeDeliveryCountDTO> getTotalDeliveriesByRange(TimeRange range) {
+    List<Object[]> results = deliveryRequestRepository.countDeliveriesGroupedBy(range.name());
+    
+    return results.stream().map(row -> 
+        new TimeRangeDeliveryCountDTO(
+            (String) row[0], 
+            ((Number) row[1]).longValue())
+        ).collect(Collectors.toList());
+    }
+    
+    public List<TopTransporterDTO> getTopTransporters() {
+        return deliveryRequestRepository.findTopTransportersByCompletedDeliveries();
+    }
+
+    public double getAverageDeliveryCompletionDays() {
+        Double avg = deliveryRequestRepository.getAverageCompletionDays();
+           return avg != null ? Math.round(avg * 100.0) / 100.0 : 0.0;
+    }
+
+    public List<TopRouteDTO> getTopRoutes() {
+        return deliveryRequestRepository.findTopRoutes();
+    }
+
+    public List<PendingDeliveryAgeDTO> getOldPendingDeliveries(int thresholdDays) {
+       return deliveryRequestRepository.findOldPendingDeliveries(thresholdDays);
+    }
+
+    public DeliveryResponseDTO cancelDelivery(CancelDeliveryRequest request) {
+    DeliveryRequest delivery = deliveryRequestRepository.findById(request.getDeliveryId())
+        .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+    delivery.setStatus("CANCELLED");
+    delivery.setCancelReason(request.getCancelReason());
+
+    DeliveryRequest updated = deliveryRequestRepository.save(delivery);
+
+        return new DeliveryResponseDTO(
+            updated.getId(),
+            updated.getPickupCity(),
+            updated.getDropoffCity(),
+            updated.getItemType(),
+            updated.getDescription(),
+            updated.getPickupDate(),
+            updated.getStatus(),
+            updated.getCustomer().getEmail(),
+            updated.getTransporter() != null ? updated.getTransporter().getEmail() : null, 
+            updated.getCancelReason()
+        );
+    }
+
+
+    public List<CancelledDeliveryDTO> getCancelledDeliveries() {
+        return deliveryRequestRepository.findCancelledDeliveries();
+    }
+
+    public Map<String, Long> getCancelledReasonStats() {
+    List<Object[]> groupedData = deliveryRequestRepository.countCancelledGroupedByReason();
+    Map<String, Long> result = new LinkedHashMap<>();
+
+    for (Object[] row : groupedData) {
+        String reason = (String) row[0];
+        Long count = ((Number) row[1]).longValue();
+        result.put(reason, count);
+    }
+
+     return result;
+    }
+
+
+
+    
+
+    
+
 
 }
