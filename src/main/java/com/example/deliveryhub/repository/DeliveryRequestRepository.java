@@ -13,10 +13,11 @@ import com.example.deliveryhub.dto.CancelledDeliveryDTO;
 import com.example.deliveryhub.dto.DailyDeliveryStatsDTO;
 import com.example.deliveryhub.dto.DeliveryStatusPercentageDTO;
 import com.example.deliveryhub.dto.PendingDeliveryAgeDTO;
-import com.example.deliveryhub.dto.TimeRangeDeliveryCountDTO;
+//import com.example.deliveryhub.dto.TimeRangeDeliveryCountDTO;
 import com.example.deliveryhub.dto.TopCityDTO;
 import com.example.deliveryhub.dto.TopRouteDTO;
 import com.example.deliveryhub.dto.TopTransporterDTO;
+import com.example.deliveryhub.dto.TransporterCompletionStatsDTO;
 import com.example.deliveryhub.dto.TransporterPerformanceDTO;
 import com.example.deliveryhub.model.DeliveryRequest;
 import com.example.deliveryhub.model.User;
@@ -57,16 +58,19 @@ public interface DeliveryRequestRepository extends  JpaRepository<DeliveryReques
    """)
    List<DeliveryStatusPercentageDTO> countDeliveriesByStatus();
 
-    @Query("""
+   @Query("""
     SELECT new com.example.deliveryhub.dto.TransporterPerformanceDTO(
-        dr.transporter.email, COUNT(dr)
+        dr.transporter.email,
+        COUNT(dr),
+        SUM(CASE WHEN dr.status = 'DELIVERED' THEN 1 ELSE 0 END),
+        SUM(CASE WHEN dr.status = 'CANCELLED' THEN 1 ELSE 0 END)
     )
     FROM DeliveryRequest dr
     WHERE dr.transporter IS NOT NULL
     GROUP BY dr.transporter.email
-    ORDER BY COUNT(dr) DESC
-   """)
-   List<TransporterPerformanceDTO> countDeliveriesPerTransporter();
+    """)
+    List<TransporterPerformanceDTO> countDeliveriesPerTransporter();
+
 
    @Query("""
     SELECT new com.example.deliveryhub.dto.TopCityDTO(dr.pickupCity, COUNT(dr))
@@ -164,18 +168,33 @@ public interface DeliveryRequestRepository extends  JpaRepository<DeliveryReques
     """)
     List<Object[]> countCancelledGroupedByReason();
 
+    @Query("""
+    SELECT 
+        dr.transporter.email,
+        SUM(CASE WHEN dr.status = 'DELIVERED' THEN 1 ELSE 0 END),
+        SUM(CASE WHEN dr.status = 'CANCELLED' THEN 1 ELSE 0 END)
+    FROM DeliveryRequest dr
+    WHERE dr.transporter IS NOT NULL
+    GROUP BY dr.transporter.email
+    """)
+    List<Object[]> getTransporterDeliveryStats();
 
 
-
-
-
-
-
-
-
-    
-    
-
+    @Query(value = """
+        SELECT 
+            u.email,
+            COUNT(dr.id),
+            AVG(EXTRACT(EPOCH FROM (dr.delivered_at - dr.assigned_at)) / 86400.0)
+        FROM delivery_request dr
+        JOIN users u ON dr.transporter_id = u.id
+        WHERE dr.status = 'DELIVERED'
+          AND dr.transporter_id IS NOT NULL
+          AND dr.assigned_at IS NOT NULL
+          AND dr.delivered_at IS NOT NULL
+        GROUP BY dr.transporter_id, u.email
+        ORDER BY AVG(EXTRACT(EPOCH FROM (dr.delivered_at - dr.assigned_at)) / 86400.0) ASC
+        """, nativeQuery = true)
+    List<Object[]> getCompletionTimePerTransporterRaw();
 
 
 

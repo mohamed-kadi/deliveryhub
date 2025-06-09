@@ -22,6 +22,7 @@ import com.example.deliveryhub.dto.TopCityDTO;
 import com.example.deliveryhub.dto.TopRouteDTO;
 import com.example.deliveryhub.dto.TopTransporterDTO;
 import com.example.deliveryhub.dto.TransporterAdminDTO;
+import com.example.deliveryhub.dto.TransporterCompletionStatsDTO;
 import com.example.deliveryhub.dto.TransporterPerformanceDTO;
 import com.example.deliveryhub.enums.TimeRange;
 import com.example.deliveryhub.model.DeliveryRequest;
@@ -127,9 +128,29 @@ public class AdminService {
        return percentages;
     }
 
-    public List<TransporterPerformanceDTO> getTransporterPerformanceSummary() {
-        return deliveryRequestRepository.countDeliveriesPerTransporter();
+    public List<TransporterPerformanceDTO> getTransporterReliabilityScores() {
+        List<Object[]> results = deliveryRequestRepository.getTransporterDeliveryStats();
+    
+        return results.stream()
+                .map(row -> {
+                    String email = (String) row[0];
+                    Long completed = ((Number) row[1]).longValue();
+                    Long cancelled = ((Number) row[2]).longValue();
+                    Long total = completed + cancelled;
+    
+                    double reliabilityScore = total == 0 ? 0.0 : ((double) completed / total) * 100;
+    
+                    return new TransporterPerformanceDTO(
+                            email,
+                            total,
+                            completed,
+                            cancelled,
+                            Math.round(reliabilityScore * 100.0) / 100.0
+                    );
+                })
+                .toList();
     }
+    
 
     public List<TopCityDTO> getTopPickupCities() {
        return deliveryRequestRepository.findTopPickupCities();
@@ -206,6 +227,19 @@ public class AdminService {
 
      return result;
     }
+
+    public List<TransporterCompletionStatsDTO> getCompletionTimePerTransporter() {
+        List<Object[]> results = deliveryRequestRepository.getCompletionTimePerTransporterRaw();
+
+        return results.stream()
+            .map(row -> new TransporterCompletionStatsDTO(
+                (String) row[0],                    // transporterEmail
+                ((Number) row[1]).longValue(),      // totalCompleted
+                row[2] != null ? ((Number) row[2]).doubleValue() : 0.0  // averageCompletionTime
+            ))
+            .collect(Collectors.toList());
+    }
+
 
 
 

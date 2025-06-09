@@ -16,6 +16,7 @@ import com.example.deliveryhub.dto.TopCityDTO;
 import com.example.deliveryhub.dto.TopRouteDTO;
 import com.example.deliveryhub.dto.TopTransporterDTO;
 import com.example.deliveryhub.dto.TransporterAdminDTO;
+import com.example.deliveryhub.dto.TransporterCompletionStatsDTO;
 import com.example.deliveryhub.dto.TransporterPerformanceDTO;
 import com.example.deliveryhub.enums.TimeRange;
 
@@ -74,11 +75,12 @@ public class AdminController {
    public ResponseEntity<Map<String, Double>> getStatusPercentages() {
       return ResponseEntity.ok(adminService.getDeliveryStatusPercentages());
    }
-
-   @GetMapping("/dashboard/transporter-performance")
-   public ResponseEntity<List<TransporterPerformanceDTO>> getTransporterPerformance() {
-      return ResponseEntity.ok(adminService.getTransporterPerformanceSummary());
+   
+   @GetMapping("/dashboard/transporter-reliability")
+   public ResponseEntity<List<TransporterPerformanceDTO>>   getTransporterReliabilityScores() {
+     return ResponseEntity.ok(adminService.getTransporterReliabilityScores());
    }
+
 
    @GetMapping("/dashboard/top-pickup-cities")
    public ResponseEntity<List<TopCityDTO>> getTopPickupCities() {
@@ -105,6 +107,12 @@ public class AdminController {
    public ResponseEntity<Double> getAverageCompletionTime() {
       return ResponseEntity.ok(adminService.getAverageDeliveryCompletionDays());
    }
+
+   @GetMapping("/dashboard/transporter-completion-stats")
+   public ResponseEntity<List<TransporterCompletionStatsDTO>> getCompletionTimePerTransporter() {
+     return ResponseEntity.ok(adminService.getCompletionTimePerTransporter());
+  }
+
 
    @GetMapping("/dashboard/top-routes")
    public ResponseEntity<List<TopRouteDTO>> getTopRoutes() {
