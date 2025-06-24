@@ -1,14 +1,11 @@
 package com.example.deliveryhub.repository;
 
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import com.example.deliveryhub.dto.CancelledDeliveryDTO;
 import com.example.deliveryhub.dto.DailyDeliveryStatsDTO;
 import com.example.deliveryhub.dto.DeliveryStatusPercentageDTO;
@@ -17,7 +14,7 @@ import com.example.deliveryhub.dto.PendingDeliveryAgeDTO;
 import com.example.deliveryhub.dto.TopCityDTO;
 import com.example.deliveryhub.dto.TopRouteDTO;
 import com.example.deliveryhub.dto.TopTransporterDTO;
-import com.example.deliveryhub.dto.TransporterCompletionStatsDTO;
+//import com.example.deliveryhub.dto.TransporterCompletionStatsDTO;
 import com.example.deliveryhub.dto.TransporterPerformanceDTO;
 import com.example.deliveryhub.model.DeliveryRequest;
 import com.example.deliveryhub.model.User;
