@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
     <title>WebSocket Chat Test - Enhanced</title>
@@ -505,6 +505,647 @@
         
         @media (max-width: 768px) {
             .input-group, .user-info, .actions {
+                flex-direction: column;
+            }
+            
+            input, select, button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat Test - Enhanced</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+    <h1>WebSocket Chat Test - Enhanced</h1>
+    
+    <div class="connection-panel">
+        <input type="text" id="tokenInput" placeholder="Enter JWT token" style="width: 400px;">
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="status">Disconnected</div>
+    </div>
+    
+    <div class="chat-panel">
+        <div class="input-group">
+            <input type="text" id="matchId" placeholder="Match ID" value="123">
+            <input type="text" id="messageInput" placeholder="Enter message">
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+        
+        <!-- ✅ STEP 3: FILE UPLOAD UI ADDED HERE -->
+        <div class="upload-group">
+            <input type="file" id="fileInput" />
+            <button onclick="uploadAndSendFile()">Upload & Send File</button>
+        </div>
+        <!-- END OF FILE UPLOAD UI -->
+        
+        <div class="user-info">
+            <input type="number" id="senderId" placeholder="Sender ID" value="3">
+            <input type="text" id="senderName" placeholder="Sender Name" value="Ali Transport">
+            <select id="senderRole">
+                <option value="TRANSPORTER">TRANSPORTER</option>
+                <option value="CUSTOMER">CUSTOMER</option>
+            </select>
+        </div>
+        
+        <div class="actions">
+            <button onclick="loadMessages()">Load Messages</button>
+            <button onclick="markAllAsRead()">Mark All as Read</button>
+        </div>
+    </div>
+
+    <div class="messages-panel">
+        <h3>Messages:</h3>
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let currentToken = '';
+        let currentUserId = null;
+        
+        function connect() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+            
+            currentToken = token;
+            
+            // PREVENT MULTIPLE CONNECTIONS
+            if (stompClient !== null && stompClient.connected) {
+                addMessage('Already connected!', 'system');
+                return;
+            }
+
+            const socket = new SockJS(`http://localhost:8080/ws?token=${token}`);
+            stompClient = Stomp.over(socket);
+            
+            // Optional: Disable debug logging
+            stompClient.debug = null;
+            
+            stompClient.connect({}, function(frame) {
+                document.getElementById('status').textContent = 'Connected';
+                document.getElementById('status').className = 'status connected';
+                console.log('Connected: ' + frame);
+                addMessage('Connected!', 'system');
+                
+                // Subscribe to match chat
+                const matchId = document.getElementById('matchId').value;
+                stompClient.subscribe(`/topic/delivery.${matchId}.chat`, function(message) {
+                    const chatMessage = JSON.parse(message.body);
+                    displayChatMessage(chatMessage);
+                });
+                
+                // Subscribe to read status updates
+                stompClient.subscribe(`/topic/delivery.${matchId}.read`, function(message) {
+                    const readUpdate = JSON.parse(message.body);
+                    updateMessageReadStatus(readUpdate.messageId, true);
+                });
+                
+            }, function(error) {
+                document.getElementById('status').textContent = 'Connection Error';
+                document.getElementById('status').className = 'status error';
+                console.error('Connection error: ' + error);
+                addMessage('Connection failed: ' + error, 'error');
+            });
+        }
+        
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+                document.getElementById('status').textContent = 'Disconnected';
+                document.getElementById('status').className = 'status disconnected';
+                addMessage('Disconnected!', 'system');
+            }
+        }
+        
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            if (stompClient === null || !stompClient.connected) {
+                alert('Please connect first');
+                return;
+            }
+            
+            const matchId = parseInt(document.getElementById('matchId').value);
+            const senderId = parseInt(document.getElementById('senderId').value);
+            const senderName = document.getElementById('senderName').value;
+            const senderRole = document.getElementById('senderRole').value;
+            
+            currentUserId = senderId; // Store current user ID
+            
+            // Create payload matching your ChatMessageDTO
+            const payload = {
+                matchId: matchId,
+                senderId: senderId,
+                senderName: senderName,
+                senderRole: senderRole,
+                content: message,
+                timestamp: new Date().toISOString().substring(0, 23).replace('Z', '')
+            };
+            
+            stompClient.send("/app/chat.send", {}, JSON.stringify(payload));
+            messageInput.value = '';
+        }
+        
+        // ✅ STEP 4: FILE UPLOAD AND SEND FUNCTION ADDED HERE
+        function uploadAndSendFile() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert("Please choose a file to upload");
+                return;
+            }
+            
+            if (stompClient === null || !stompClient.connected) {
+                alert('Please connect first');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            fetch("http://localhost:8080/api/chat/upload", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${currentToken}`
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Upload failed");
+                return response.text(); // the returned URL
+            })
+            .then(fileUrl => {
+                const matchId = parseInt(document.getElementById("matchId").value);
+                const senderId = parseInt(document.getElementById("senderId").value);
+                const senderName = document.getElementById("senderName").value;
+                const senderRole = document.getElementById("senderRole").value;
+                
+                currentUserId = senderId; // Store current user ID
+                
+                // const messageType = file.type.startsWith("image/") ? "IMAGE" : "FILE";
+                const messageType ="FILE"; // Assuming all uploads are files for simplicity 
+                
+                const chatMessage = {
+                    matchId,
+                    senderId,
+                    senderName,
+                    senderRole,
+                    content: file.name,
+                    fileName: file.name,
+                    fileUrl: fileUrl,
+                    messageType: messageType,
+                    timestamp: new Date().toISOString().substring(0, 23)
+                };
+                
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                fileInput.value = ""; // Clear file input
+                addMessage(`File uploaded successfully: ${file.name}`, 'system');
+            })
+            .catch(error => {
+                console.error("Error uploading or sending file:", error);
+                addMessage(`Upload error: ${error.message}`, "error");
+            });
+        }
+        // END OF FILE UPLOAD FUNCTION
+        
+        function displayChatMessage(chatMessage) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.setAttribute('data-message-id', chatMessage.id);
+            
+            const time = new Date(chatMessage.timestamp).toLocaleTimeString();
+            const isFromCurrentUser = chatMessage.senderId === currentUserId;
+            const readStatusClass = chatMessage.isRead ? 'read' : 'unread';
+            const clickHandler = !isFromCurrentUser ? `onclick="markMessageAsRead(${chatMessage.id})"` : '';
+            
+            // ✅ STEP 5: ENHANCED DISPLAY LOGIC FOR FILES/IMAGES
+            let contentHtml = chatMessage.content;
+            
+            // For image
+            if (chatMessage.messageType === "IMAGE" && chatMessage.fileUrl) {
+                contentHtml = `<img src="${chatMessage.fileUrl}" style="max-width: 200px; border-radius: 8px; cursor: pointer;" alt="${chatMessage.fileName}" onclick="window.open('${chatMessage.fileUrl}', '_blank')" />`;
+            }
+            // For file
+            else if (chatMessage.messageType === "FILE" && chatMessage.fileUrl) {
+                contentHtml = `<a href="${chatMessage.fileUrl}" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">📎 ${chatMessage.fileName}</a>`;
+            }
+            // END OF ENHANCED DISPLAY LOGIC
+            
+            messageElement.innerHTML = `
+                <div class="message-header">
+                    <span class="sender-role ${chatMessage.senderRole.toLowerCase()}">[${chatMessage.senderRole}]</span>
+                    <span class="sender-name">${chatMessage.senderName}</span>
+                    <span class="message-time">${time}</span>
+                    <span class="read-status ${readStatusClass}">${chatMessage.isRead ? '✓✓' : '✓'}</span>
+                </div>
+                <div class="message-content" ${clickHandler}>${contentHtml}</div>
+                ${!isFromCurrentUser && !chatMessage.isRead ? '<div class="click-to-read">Click to mark as read</div>' : ''}
+            `;
+            
+            if (!isFromCurrentUser && !chatMessage.isRead) {
+                messageElement.classList.add('unread-message');
+            }
+            
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // REST API approach for marking as read
+        function markMessageAsRead(messageId) {
+            if (!currentToken) {
+                alert('Please connect first');
+                return;
+            }
+            
+            fetch(`http://localhost:8080/api/chat/${messageId}/read`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(updatedMessage => {
+                updateMessageReadStatus(messageId, true);
+                addMessage(`Message ${messageId} marked as read`, 'system');
+            })
+            .catch(error => {
+                console.error('Error marking message as read:', error);
+                addMessage(`Error marking message as read: ${error.message}`, 'error');
+            });
+        }
+        
+        // WebSocket approach alternative (if you prefer this)
+        function markMessageAsReadWS(messageId) {
+            if (stompClient && stompClient.connected) {
+                stompClient.send("/app/chat.read", {}, JSON.stringify(messageId));
+            }
+        }
+        
+        function updateMessageReadStatus(messageId, isRead) {
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const readStatusElement = messageElement.querySelector('.read-status');
+                if (readStatusElement) {
+                    readStatusElement.textContent = isRead ? '✓✓' : '✓';
+                    readStatusElement.className = `read-status ${isRead ? 'read' : 'unread'}`;
+                }
+                
+                const clickToReadElement = messageElement.querySelector('.click-to-read');
+                if (clickToReadElement && isRead) {
+                    clickToReadElement.remove();
+                }
+                
+                if (isRead) {
+                    messageElement.classList.remove('unread-message');
+                }
+            }
+        }
+        
+        // Load existing messages and automatically mark them as read
+        function loadMessages() {
+            if (!currentToken) {
+                alert('Please connect first');
+                return;
+            }
+            
+            const matchId = document.getElementById('matchId').value;
+            
+            fetch(`http://localhost:8080/api/chat/delivery/${matchId}/messages`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(messages => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = ''; // Clear existing messages
+                
+                messages.forEach(message => {
+                    displayChatMessage(message);
+                });
+                
+                addMessage(`Loaded ${messages.length} messages and marked unread as read`, 'system');
+            })
+            .catch(error => {
+                console.error('Error loading messages:', error);
+                addMessage(`Error loading messages: ${error.message}`, 'error');
+            });
+        }
+        
+        function markAllAsRead() {
+            const unreadMessages = document.querySelectorAll('.unread-message');
+            unreadMessages.forEach(messageElement => {
+                const messageId = messageElement.getAttribute('data-message-id');
+                markMessageAsRead(parseInt(messageId));
+            });
+        }
+        
+        function addMessage(text, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `system-message ${type}`;
+            messageElement.textContent = text;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Allow sending message with Enter key
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+    
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .connection-panel, .chat-panel, .messages-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* ✅ STYLING FOR UPLOAD GROUP ADDED HERE */
+        .input-group, .user-info, .actions, .upload-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .upload-group {
+            align-items: center;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px dashed #667eea;
+        }
+        /* END OF UPLOAD GROUP STYLING */
+        
+        input, select, button {
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #status {
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        #messages {
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .message.unread-message {
+            border-left-color: #ff6b6b;
+            background: #fff8f8;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .sender-role {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        .sender-role.transporter {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .sender-role.customer {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .sender-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .message-time {
+            color: #666;
+            margin-left: auto;
+        }
+        
+        .read-status {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .read-status.read {
+            color: #4caf50;
+        }
+        
+        .read-status.unread {
+            color: #ff9800;
+        }
+        
+        .message-content {
+            color: #333;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+        
+        .message-content:hover {
+            background: #f0f0f0;
+            border-radius: 4px;
+            padding: 4px;
+        }
+        
+        /* ✅ ADDITIONAL STYLING FOR FILE/IMAGE CONTENT */
+        .message-content img {
+            display: block;
+            margin: 8px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        
+        .message-content img:hover {
+            transform: scale(1.05);
+        }
+        
+        .message-content a {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 6px;
+            margin: 4px 0;
+            transition: background 0.2s ease;
+        }
+        
+        .message-content a:hover {
+            background: rgba(102, 126, 234, 0.2);
+            text-decoration: underline;
+        }
+        /* END OF FILE/IMAGE CONTENT STYLING */
+        
+        .click-to-read {
+            font-size: 11px;
+            color: #ff6b6b;
+            font-style: italic;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .system-message {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .system-message.system {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .system-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        #tokenInput {
+            flex: 1;
+        }
+        
+        #messageInput {
+            flex: 2;
+        }
+        
+        @media (max-width: 768px) {
+            .input-group, .user-info, .actions, .upload-group {
                 flex-direction: column;
             }
             

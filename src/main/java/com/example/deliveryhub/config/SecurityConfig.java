@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/register","/ws/**","/app/**","/topic/**","/websocket-test.html").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/register", "/uploads/chat/**","/ws/**","/app/**","/topic/**","/websocket-test.html").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

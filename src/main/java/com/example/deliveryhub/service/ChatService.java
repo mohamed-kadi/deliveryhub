@@ -1,5 +1,6 @@
 package com.example.deliveryhub.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -7,9 +8,11 @@ import java.util.stream.Collectors;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.deliveryhub.dto.ChatMessageDTO;
 import com.example.deliveryhub.dto.MessageReadEvent;
+import com.example.deliveryhub.enums.MessageType;
 import com.example.deliveryhub.model.ChatMessage;
 import com.example.deliveryhub.model.DeliveryRequest;
 import com.example.deliveryhub.model.Role;
@@ -118,14 +121,6 @@ public class ChatService {
 
         message.setIsRead(true);
         ChatMessage saved = chatMessageRepository.save(message);
-
-        // // ✅ Broadcast to sender that message was read
-        // messagingTemplate.convertAndSend(
-        //         "/topic/delivery." + saved.getDelivery().getId() + ".read",
-        //         Map.of("messageId", saved.getId()) // or use a DTO if preferred
-        //         );
-
-        // 🔔 Notify sender that the message has been read
         MessageReadEvent event = new MessageReadEvent(saved.getId(), saved.getDelivery().getId());
         String topic = "/topic/delivery." + saved.getDelivery().getId() + ".read";
         messagingTemplate.convertAndSend(topic, event);
@@ -164,5 +159,68 @@ public class ChatService {
         
         System.out.println("Marked " + unreadMessages.size() + " unread messages as read for user " + receiverEmail + " in delivery " + deliveryId);
         }
+
+
+        public ChatMessageDTO sendFileMessage(
+        String senderEmail,
+        Long matchId,
+        Long senderId,
+        String senderName,
+        Role senderRole,
+        MultipartFile file
+        ) throws IOException {
+
+        User sender = userRepository.findByEmail(senderEmail)
+                .orElseThrow(() -> new RuntimeException("Sender not found"));
+
+        if (!sender.getId().equals(senderId)) {
+                throw new SecurityException("Sender ID does not match authenticated user");
+        }
+
+        DeliveryRequest delivery = deliveryRequestRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+        if (!sender.getId().equals(delivery.getCustomer().getId()) &&
+                !sender.getId().equals(delivery.getTransporter().getId())) {
+                throw new SecurityException("User is not authorized to send messages for this delivery");
+        }
+
+        // Simulate storing the file (this should be replaced with actual cloud storage)
+        String fakeUrl = "http://localhost:8080/files/" + file.getOriginalFilename();
+
+        User receiver = sender.getRole() == Role.CUSTOMER
+                ? delivery.getTransporter()
+                : delivery.getCustomer();
+
+        ChatMessage message = new ChatMessage();
+        message.setSender(sender);
+        message.setReceiver(receiver);
+        message.setDelivery(delivery);
+        message.setContent(file.getOriginalFilename());
+        message.setFileName(file.getOriginalFilename());
+        message.setFileUrl(fakeUrl);
+        message.setIsRead(false);
+        message.setIsDelivered(true);
+        message.setMessageType(MessageType.FILE);
+        message.setTimestamp(LocalDateTime.now());
+
+        ChatMessage saved = chatMessageRepository.save(message);
+
+        return ChatMessageDTO.builder()
+                .id(saved.getId())
+                .matchId(delivery.getId())
+                .senderId(sender.getId())
+                .senderName(sender.getFullName())
+                .senderRole(sender.getRole())
+                .content(saved.getContent())
+                .messageType(saved.getMessageType())
+                .timestamp(saved.getTimestamp())
+                .fileUrl(saved.getFileUrl())
+                .fileName(saved.getFileName())
+                .isRead(saved.getIsRead())
+                .isDelivered(saved.getIsDelivered())
+                .build();
+        }
+
 
 }
