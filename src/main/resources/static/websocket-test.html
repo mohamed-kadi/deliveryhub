@@ -27,6 +27,8 @@
         <div class="upload-group">
             <input type="file" id="fileInput" />
             <button onclick="uploadAndSendFile()">Upload & Send File</button>
+            <button onclick="sendLocation()">Send Location</button>
+
         </div>
         
         <div class="user-info">
@@ -209,6 +211,42 @@
                 addMessage(`Upload error: ${error.message}`, "error");
             });
         }
+
+        function sendLocation() {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                const matchId = parseInt(document.getElementById("matchId").value);
+                const senderId = parseInt(document.getElementById("senderId").value);
+                const senderName = document.getElementById("senderName").value;
+                const senderRole = document.getElementById("senderRole").value;
+
+                const chatMessage = {
+                    matchId,
+                    senderId,
+                    senderName,
+                    senderRole,
+                    content: `Shared location: (${latitude}, ${longitude})`,
+                    latitude: latitude,
+                    longitude: longitude,
+                    messageType: "LOCATION",
+                    timestamp: new Date().toISOString().substring(0, 23)
+                };
+
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                addMessage("Location sent successfully", "system");
+            }, function(error) {
+                console.error("Location error:", error);
+                alert("Failed to get location.");
+            });
+        }
+
         
         function getMessageStatus(chatMessage) {
             // Determine message status based on available properties
@@ -258,6 +296,13 @@
             else if (chatMessage.messageType === "FILE" && chatMessage.fileUrl) {
                 contentHtml = `<a href="${chatMessage.fileUrl}" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">📎 ${chatMessage.fileName}</a>`;
             }
+
+            // For location
+            else if (chatMessage.messageType === "LOCATION" && chatMessage.latitude && chatMessage.longitude) {
+                const mapLink = `https://www.google.com/maps?q=${chatMessage.latitude},${chatMessage.longitude}`;
+                contentHtml = `<a href="${mapLink}" target="_blank" style="color: #2196f3; font-weight: bold;">📍 View Location on Map</a>`;
+            }
+
             
             messageElement.innerHTML = `
                 <div class="message-header">

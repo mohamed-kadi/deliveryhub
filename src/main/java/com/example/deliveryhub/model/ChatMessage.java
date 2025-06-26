@@ -2,6 +2,8 @@ package com.example.deliveryhub.model;
 
 import java.time.LocalDateTime;
 
+import com.example.deliveryhub.enums.MessageType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -48,7 +50,7 @@ public class ChatMessage {
     private Double longitude;
 
     @Enumerated(EnumType.STRING)
-    private com.example.deliveryhub.enums.MessageType messageType;
+    private MessageType messageType;
 
     
 
