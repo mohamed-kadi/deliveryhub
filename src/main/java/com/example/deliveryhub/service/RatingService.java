@@ -59,6 +59,11 @@ public class RatingService {
                 .build();
             return ratingRepository.save(rating);
     }
+
+    public Double getAverageRatingForUser(Long userId) {
+        return ratingRepository.findAverageRatingByRevieweeId(userId);
+    }
+    
     
 
 }

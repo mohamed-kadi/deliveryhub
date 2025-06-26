@@ -2,6 +2,8 @@ package com.example.deliveryhub.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +34,12 @@ public class RatingController {
             return ResponseEntity.internalServerError().body("Error submitting rating");
         }
     }
+
+        @GetMapping("/{userId}/average")
+        public ResponseEntity<Double> getAverageRating(@PathVariable Long userId) {
+            Double average = ratingService.getAverageRatingForUser(userId);
+        return ResponseEntity.ok(average != null ? average : 0.0);
+        }
 
 
 }
