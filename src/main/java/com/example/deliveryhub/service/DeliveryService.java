@@ -31,6 +31,8 @@ public class DeliveryService {
         request.setDescription(dto.getDescription());
         request.setPickupDate(dto.getPickupDate());
         request.setCustomer(customer);
+        request.setWeightKg(dto.getWeightKg());
+        
         request.setStatus("PENDING");
 
         DeliveryRequest saved = deliveryRequestRepository.save(request);

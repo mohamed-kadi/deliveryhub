@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 
@@ -20,6 +22,10 @@ public class DeliveryRequestDTO {
     private String itemType; // e.g., electronics, clothing
 
     private String description;
+
+    @NotNull
+    @Positive
+    private Double weightKg;
 
     @Future
     private LocalDate pickupDate;

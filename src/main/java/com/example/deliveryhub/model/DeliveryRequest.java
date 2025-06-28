@@ -6,6 +6,9 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.example.deliveryhub.enums.PaymentMethod;
+import com.example.deliveryhub.enums.PaymentStatus;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -47,6 +50,20 @@ public class DeliveryRequest {
 
     @Column(name = "cancel_reason")
     private String cancelReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus;
+
+    private Double paymentAmount;
+
+    @Column(name = "weight_kg")
+    private Double weightKg;
+
     
 
 }
