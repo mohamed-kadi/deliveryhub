@@ -1,6 +1,7 @@
 package com.example.deliveryhub.dto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,7 +23,23 @@ public class DeliveryResponseDTO {
     private String status;
     private String customerEmail;
     private String transportEmail;
+    private String customerName;
+    private String transporterName;
     private String cancelReason;
+
+    // Fields for decline reason and message
+    private String declineReason;
+    private String declineMessage;
+    private LocalDateTime declinedAt;
+    private Boolean declineDismissed;
+
+    // Add these fields for rating system
+    private Long customerId;
+    private Long transporterId;
+    private Double weightKg;
+
+    private LocalDateTime requestedAt;
+    private LocalDateTime acceptedAt;
 }
 
 

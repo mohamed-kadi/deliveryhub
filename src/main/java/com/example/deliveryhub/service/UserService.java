@@ -6,6 +6,8 @@ import com.example.deliveryhub.model.Role;
 import com.example.deliveryhub.model.User;
 import com.example.deliveryhub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +38,6 @@ public class UserService {
             user.setVerified(true); // Auto-verified for CUSTOMER or ADMIN
         }
         
-
         User saved = userRepository.save(user);
 
         return new UserResponseDTO(
@@ -48,5 +49,51 @@ public class UserService {
                 saved.isVerified()
         );
     }
+
+        public void updateAvailability(boolean available) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setAvailableForDeliveries(available);
+        userRepository.save(user);
+    }
+
+    public Boolean getAvailability() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return user.getAvailableForDeliveries() != null ? user.getAvailableForDeliveries() : true;
+    }
+    // Add this method to your UserService.java
+    public UserResponseDTO getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Use constructor instead of builder
+        UserResponseDTO response = new UserResponseDTO();
+        response.setId(user.getId());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole()); 
+        response.setVerified(user.isVerified()); // Try isVerified() instead of getVerified()
+
+        return response;
+    }
+    
+    public UserResponseDTO getUserById(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+        
+    UserResponseDTO response = new UserResponseDTO();
+    response.setId(user.getId());
+    response.setFullName(user.getFullName());
+    response.setPhone(user.getPhone());
+    response.setEmail(user.getEmail());
+    // Skip role and verified for simplicity, or add them if your DTO supports it
+    
+    return response;
+}
 }
 

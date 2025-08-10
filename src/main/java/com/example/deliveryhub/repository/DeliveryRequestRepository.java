@@ -27,12 +27,14 @@ public interface DeliveryRequestRepository extends  JpaRepository<DeliveryReques
     
     Optional<DeliveryRequest> findByIdAndStatus(Long id, String status);
     
-    List<DeliveryRequest> findByTransporterAndStatus(User transporter, String status);
+    List<DeliveryRequest> findByTransporterAndStatusIn(User transporter, List<String> statuses);
 
     List<DeliveryRequest> findByCustomerAndStatusIn(User customer, List<String> of);
 
     List<DeliveryRequest> findByCustomerAndStatus(User customer, String status);
 
+    Long countByTransporterAndStatus(User transporter, String status);
+    
     long countByStatus(String status);
 
     @Query("""
@@ -192,6 +194,8 @@ public interface DeliveryRequestRepository extends  JpaRepository<DeliveryReques
         ORDER BY AVG(EXTRACT(EPOCH FROM (dr.delivered_at - dr.assigned_at)) / 86400.0) ASC
         """, nativeQuery = true)
     List<Object[]> getCompletionTimePerTransporterRaw();
+
+
 
 
 

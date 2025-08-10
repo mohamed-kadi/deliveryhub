@@ -8,6 +8,4 @@ public class CancelDeliveryRequest {
     private String cancelReason;
 
 
-
-
 }

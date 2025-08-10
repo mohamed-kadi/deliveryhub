@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.example.deliveryhub.enums.DeclineReason;
 import com.example.deliveryhub.enums.PaymentMethod;
 import com.example.deliveryhub.enums.PaymentStatus;
 
@@ -42,6 +43,12 @@ public class DeliveryRequest {
       this.createdAt = LocalDateTime.now();
     }
     
+    @Column(name = "requested_at")
+    private LocalDateTime requestedAt;
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
@@ -64,6 +71,21 @@ public class DeliveryRequest {
     @Column(name = "weight_kg")
     private Double weightKg;
 
-    
+    // Additional fields for decline reasons
+    @Enumerated(EnumType.STRING)
+    @Column(name = "decline_reason")
+    private DeclineReason declineReason;
+
+    @Column(name = "decline_message")
+    private String declineMessage;
+
+    @Column(name = "declined_at")
+    private LocalDateTime declinedAt;
+
+    @Column(name = "declined_by")
+    private Long declinedBy; // Transporter ID who declined
+
+    @Column(name = "decline_dismissed")
+    private Boolean declineDismissed = false;
 
 }

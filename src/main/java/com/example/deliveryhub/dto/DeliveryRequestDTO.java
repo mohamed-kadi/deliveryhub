@@ -12,6 +12,8 @@ import lombok.Data;
 @Data
 public class DeliveryRequestDTO {
 
+    private Long transporterId;
+
     @NotBlank
     private String pickupCity;
 

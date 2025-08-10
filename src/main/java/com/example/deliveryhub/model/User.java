@@ -8,8 +8,9 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = { @UniqueConstraint(columnNames = "email")})
 public class User {
 
     @Id
@@ -23,9 +24,12 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
-
+    
+    @Column(name = "verified")
     private boolean verified;
 
 
+    @Column(name = "available_for_deliveries")
+    private Boolean availableForDeliveries = true;
 
 }
