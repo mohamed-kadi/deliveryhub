@@ -30,7 +30,7 @@ public class PaymentService {
             TransporterPricing pricing = transporterPricingRepository.findByTransporter(delivery.getTransporter()).orElseThrow(() -> new IllegalArgumentException("Pricing not found for transporter"));
 
             double weight = delivery.getWeightKg();
-            double amount = (weight < pricing.getWeightThreshold()) 
+            double amount = (weight <= pricing.getWeightThreshold()) 
                 ? pricing.getFixedPriceUnderThreshold() 
                 : weight * pricing.getRatePerKg();
 
@@ -90,7 +90,7 @@ public class PaymentService {
             .orElseThrow(() -> new IllegalArgumentException("Pricing not found for transporter"));
 
         double weight = delivery.getWeightKg();
-        double amount = (weight < pricing.getWeightThreshold())
+        double amount = (weight <= pricing.getWeightThreshold())
                 ? pricing.getFixedPriceUnderThreshold()
                 : weight * pricing.getRatePerKg();
 

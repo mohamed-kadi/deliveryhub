@@ -205,8 +205,19 @@ public class AdminService {
             updated.getPickupDate(),
             updated.getStatus(),
             updated.getCustomer().getEmail(),
-            updated.getTransporter() != null ? updated.getTransporter().getEmail() : null, 
-            updated.getCancelReason()
+            updated.getTransporter() != null ? updated.getTransporter().getEmail() : null,
+            updated.getCustomer().getFullName(),
+            updated.getTransporter() != null ? updated.getTransporter().getFullName() : null, 
+            updated.getCancelReason(),
+            updated.getDeclineReason() != null ? updated.getDeclineReason().toString() : null,
+            updated.getDeclineMessage(),
+            updated.getDeclinedAt(),
+            updated.getDeclineDismissed(),
+            updated.getCustomer().getId(),
+            updated.getTransporter() != null ? updated.getTransporter().getId() : null,
+            updated.getWeightKg(),
+            updated.getRequestedAt(),
+            updated.getAcceptedAt()
         );
     }
 
