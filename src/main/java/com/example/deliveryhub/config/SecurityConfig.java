@@ -2,12 +2,8 @@ package com.example.deliveryhub.config;
 
 import com.example.deliveryhub.auth.CustomUserDetailsService;
 import com.example.deliveryhub.auth.JwtAuthFilter;
-
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
-
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -20,7 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
+import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -36,9 +32,14 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/users/register", "/uploads/chat/**","/ws/**","/app/**","/topic/**","/websocket-test.html").permitAll()
-                        .requestMatchers("/api/payment/**") 
+                        .requestMatchers("/api/payment/**").authenticated()
+                        .requestMatchers("/api/routes/**").hasRole("TRANSPORTER")
+                        .requestMatchers("/api/deliveries/**").hasAnyRole("CUSTOMER", "TRANSPORTER") //added 
+                        .requestMatchers("/api/marketplace/**").authenticated() // added
+                        .requestMatchers("/api/chat/**").authenticated() //added
+                        .anyRequest()
                         .authenticated()
-                        .anyRequest().authenticated()
+                        
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .userDetailsService(userDetailsService)
@@ -48,15 +49,21 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedMethods(List.of("*"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.addAllowedOriginPattern("*");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+        
+        // Add Google's domains for OAuth
+        configuration.addAllowedOrigin("https://accounts.google.com");
+        configuration.addAllowedOrigin("https://oauth2.googleapis.com");
+        configuration.addAllowedOrigin("http://localhost:3000");
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", configuration);
         return source;
-   }
+    }
 
 
     @Bean
