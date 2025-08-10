@@ -182,6 +182,5 @@ public class DeliveryController {
         User user = securityUtils.getCurrentUser();
         Optional<Rating> rating = ratingService.getMyRatingForDelivery(deliveryId, user.getId());
         return rating.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-    }
-    
+    }  
 }
