@@ -20,4 +20,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long>{
 
     List<ChatMessage> findByDeliveryIdAndReceiverIdAndIsReadFalse(Long deliveryId, Long receiverId);
 
+    int countByDeliveryIdAndReceiverIdAndIsReadFalse(Long deliveryId, Long receiverId);
+
 }

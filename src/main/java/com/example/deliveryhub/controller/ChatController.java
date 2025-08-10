@@ -106,10 +106,4 @@ public class ChatController {
                                 .body("File upload failed: " + e.getMessage());
         }
     }
-
-
-
-
-
-
 }
