@@ -35,3 +35,8 @@ build/
 # Ignore secrets
 src/main/resources/application.properties
 .metals/
+
+# Local artifacts
+uploads/
+**/uploads/
+deliveryhub-frontend/
