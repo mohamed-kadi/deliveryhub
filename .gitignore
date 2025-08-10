@@ -39,4 +39,9 @@ src/main/resources/application.properties
 # Local artifacts
 uploads/
 **/uploads/
-deliveryhub-frontend/
+
+node_modules/
+dist/
+*.log
+.env
+

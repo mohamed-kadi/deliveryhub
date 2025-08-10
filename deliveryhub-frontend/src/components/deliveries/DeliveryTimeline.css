@@ -1,0 +1,33 @@
+.timeline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+  
+  .timeline-step {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .completed {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .active {
+    color: blue;
+    text-decoration: underline;
+  }
+  
+  .upcoming {
+    color: gray;
+  }
+  
+  .arrow {
+    margin: 0 4px;
+  }
+  
