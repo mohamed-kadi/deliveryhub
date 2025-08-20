@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Truck, Package, Clock, Euro, MessageCircle, MapPin, CheckCircle, ArrowRight, RefreshCw, User, Calendar, Plus, Search, X } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import ChatSidebar from '../components/ChatSidebar';
-import { WithNotificationBadge } from '../components/NotificationBadge';
 import useUnreadMessages from '../hooks/useUnreadMessages';
 import { useAuth } from '../contexts/AuthContext';
 // the new restructuring imports 
@@ -410,7 +409,7 @@ const TransporterDashboard = () => {
     try {
       const response = await apiClient.get('/deliveries/assigned');
       const data = response.data;
-      console.log('Assigned Deliveries Data:', data); // debug line
+
       setAssignedDeliveries(data);
         
       const statuses = {};
@@ -895,7 +894,12 @@ const TransporterDashboard = () => {
             reason: reason,
             customMessage: message
           });
-          await fetchAvailableDeliveries();
+          if (selectedTab === 'assigned') {
+            await fetchAssignedDeliveries();
+          } else {
+            await fetchAvailableDeliveries();
+          }
+          
         }}
         delivery={selectedDelivery}
       />

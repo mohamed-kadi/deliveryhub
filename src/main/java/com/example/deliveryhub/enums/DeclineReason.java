@@ -3,7 +3,7 @@ package com.example.deliveryhub.enums;
 
 public enum DeclineReason {
     FULL_CAPACITY("Vehicle is at full capacity"),
-    TIME_CONFILICT("Schedule conflict"),
+    TIME_CONFLICT("Schedule conflict"),
     ROUTE_MISMATCH("Route doesn't match my travel plans"),
     DISTANCE_TOO_FAR("Pickup/delivery location is too  far"),
     ITEM_NOT_ACCEPTED("Item type not accepted"),

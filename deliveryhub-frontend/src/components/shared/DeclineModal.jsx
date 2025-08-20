@@ -25,7 +25,8 @@ const DeclineModal = ({
   const [selectedReason, setSelectedReason] = useState('');
   const [customMessage, setCustomMessage] = useState('');
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
     if (!selectedReason.trim()) {
       alert('Please select a reason for declining');
       return;
@@ -40,6 +41,8 @@ const DeclineModal = ({
       handleClose();
     } catch (error) {
       console.error('Error declining delivery:', error);
+        const msg = error.response?.data?.message || error.response?.data || error.message;
+        alert(`Decline failed: ${msg}`);
       // Error handling can be done by parent component
     }
   };
@@ -174,7 +177,6 @@ const DeclineModal = ({
       color: '#4a5568'
     }
   };
-
   return (
     <div style={styles.modal} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div style={styles.modalContent}>
@@ -265,6 +267,96 @@ const DeclineModal = ({
       </div>
     </div>
   );
+  // return (
+  //   <div style={styles.modal} onClick={(e) => e.target === e.currentTarget && handleClose()}>
+  //     <div style={styles.modalContent}>
+  //       {/* Header */}
+  //       <div style={styles.modalHeader}>
+  //         <h2 style={styles.modalTitle}>{title}</h2>
+  //         <button style={styles.closeButton} onClick={handleClose}>
+  //           <X size={20} />
+  //         </button>
+  //       </div>
+
+  //       {/* Delivery Information */}
+  //       <div style={styles.deliveryInfo}>
+  //         <h4 style={styles.deliveryTitle}>Delivery #{delivery.id}</h4>
+  //         <p style={styles.deliveryDetail}>
+  //           {delivery.pickupCity} → {delivery.dropoffCity}
+  //         </p>
+  //       </div>
+
+  //       {/* Reason Selection */}
+  //       <div style={styles.formSection}>
+  //         <label style={styles.label}>
+  //           {reasonLabel} *
+  //         </label>
+  //         <select
+  //           value={selectedReason}
+  //           onChange={(e) => setSelectedReason(e.target.value)}
+  //           style={styles.select}
+  //           onFocus={(e) => e.target.style.borderColor = '#3182ce'}
+  //           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+  //         >
+  //           <option value="">{reasonPlaceholder}</option>
+  //           {reasons.map(reason => (
+  //             <option key={reason.value} value={reason.value}>
+  //               {reason.label}
+  //             </option>
+  //           ))}
+  //         </select>
+  //       </div>
+
+  //       {/* Additional Message */}
+  //       <div style={styles.formSection}>
+  //         <label style={styles.label}>
+  //           {messageLabel}
+  //         </label>
+  //         <textarea
+  //           value={customMessage}
+  //           onChange={(e) => setCustomMessage(e.target.value)}
+  //           placeholder={messagePlaceholder}
+  //           style={styles.textarea}
+  //           onFocus={(e) => e.target.style.borderColor = '#3182ce'}
+  //           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+  //         />
+  //       </div>
+
+  //       {/* Action Buttons */}
+  //       <div style={styles.buttonContainer}>
+  //         <button
+  //           style={{
+  //             ...styles.button,
+  //             ...(selectedReason ? styles.buttonDanger : { ...styles.buttonDanger, ...styles.buttonDangerDisabled })
+  //           }}
+  //           onClick={handleSubmit}
+  //           disabled={!selectedReason}
+  //           onMouseOver={(e) => {
+  //             if (selectedReason) {
+  //               e.target.style.backgroundColor = '#c53030';
+  //             }
+  //           }}
+  //           onMouseOut={(e) => {
+  //             if (selectedReason) {
+  //               e.target.style.backgroundColor = '#e53e3e';
+  //             }
+  //           }}
+  //         >
+  //           <X size={16} />
+  //           {submitButtonText}
+  //         </button>
+  //         <button
+  //           style={{ ...styles.button, ...styles.buttonSecondary }}
+  //           onClick={handleClose}
+  //           onMouseOver={(e) => e.target.style.backgroundColor = '#d1d5db'}
+  //           onMouseOut={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+  //         >
+  //           {cancelButtonText}
+  //         </button>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
 };
 
 export default DeclineModal;

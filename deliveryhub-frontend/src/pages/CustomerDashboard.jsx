@@ -555,12 +555,16 @@ const CustomerDashboard = () => {
     return matchesStatus && matchesSearch;
   });
 
+
   const deliveryStats = {
-    total: myDeliveries.length,
-    pending: myDeliveries.filter(d => d.status === 'PENDING').length,
-    inTransit: myDeliveries.filter(d => ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'].includes(d.status)).length,
-    delivered: myDeliveries.filter(d => d.status === 'DELIVERED').length
-  };
+  total: myDeliveries.length,
+  // Optional: include REQUESTED if you want pending to cover the 48h window
+  pending: myDeliveries.filter(d => d.status === 'PENDING').length,
+  requested: myDeliveries.filter(d => d.status === 'REQUESTED').length,
+  inProgress: myDeliveries.filter(d => d.status === 'ASSIGNED' || d.status === 'PICKED_UP').length,
+  inTransit: myDeliveries.filter(d => d.status === 'IN_TRANSIT').length,
+  delivered: myDeliveries.filter(d => d.status === 'DELIVERED').length
+};
 
   if (loading) {
     return (
@@ -709,14 +713,24 @@ const CustomerDashboard = () => {
                   count: myDeliveries.filter(d => d.status === 'PENDING').length 
                 },
                 { 
+                  key: 'REQUESTED', 
+                  label: 'Requested', 
+                  count: myDeliveries.filter(d => d.status === 'REQUESTED').length 
+                },
+                { 
                   key: 'ASSIGNED', 
                   label: 'Assigned', 
                   count: myDeliveries.filter(d => d.status === 'ASSIGNED').length 
                 },
+                                { 
+                  key: 'DECLINED', 
+                  label: 'Declined', 
+                  count: myDeliveries.filter(d => d.status === 'DECLINED').length 
+                },
                 { 
                   key: 'IN_TRANSIT', 
                   label: 'In Transit', 
-                  count: myDeliveries.filter(d => ['PICKED_UP', 'IN_TRANSIT'].includes(d.status)).length 
+                  count: myDeliveries.filter(d => d.status ==='IN_TRANSIT').length
                 },
                 { 
                   key: 'DELIVERED', 

@@ -157,6 +157,8 @@ public class DeliveryService {
 
         request.setStatus("ASSIGNED");
         request.setTransporter(transporter);
+        request.setAssignedAt(LocalDateTime.now());
+
 
         DeliveryRequest saved = deliveryRequestRepository.save(request);
 
@@ -186,103 +188,169 @@ public class DeliveryService {
     }
     
     public List<DeliveryResponseDTO> getAssignedDeliveries() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User transporter = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Transporter not found"));
-        
-        // Include all statuses that represent "assigned" deliveries
-        List<String> statuses = Arrays.asList("REQUESTED", "ASSIGNED", "PICKED_UP", "IN_TRANSIT", "DELIVERED");        
-        List<DeliveryRequest> deliveries = deliveryRequestRepository.findByTransporterAndStatusIn(transporter, statuses);
-    
-        return deliveries.stream()
-                .map(req -> new DeliveryResponseDTO(
-                        req.getId(),
-                        req.getPickupCity(),
-                        req.getDropoffCity(),
-                        req.getItemType(),
-                        req.getDescription(),
-                        req.getPickupDate(),
-                        req.getStatus(),
-                        req.getCustomer().getEmail(),
-                        req.getTransporter() != null ? req.getTransporter().getEmail() : null,
-                        req.getCustomer().getFullName(),
-                        req.getTransporter() !=null ? req.getTransporter().getFullName() : null,
-                        req.getCancelReason(),
-                        req.getDeclineReason() != null ? req.getDeclineReason().toString() : null,
-                        req.getDeclineMessage(),
-                        req.getDeclinedAt(),
-                        req.getDeclineDismissed(),
-                        req.getCustomer().getId(),
-                        req.getTransporter() != null ? req.getTransporter().getId() : null,
-                        req.getWeightKg(),
-                        req.getRequestedAt(),
-                        req.getAcceptedAt())).toList();
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User transporter = userRepository.findByEmail(email)
+                            .orElseThrow(() -> new RuntimeException("Transporter not found"));
+
+            // Include all statuses that represent "assigned" deliveries
+            List<String> statuses = Arrays.asList("REQUESTED", "ASSIGNED", "PICKED_UP", "IN_TRANSIT", "DELIVERED");
+            List<DeliveryRequest> deliveries = deliveryRequestRepository.findByTransporterAndStatusIn(transporter,
+                            statuses);
+
+            return deliveries.stream()
+                            .map(req -> new DeliveryResponseDTO(
+                                            req.getId(),
+                                            req.getPickupCity(),
+                                            req.getDropoffCity(),
+                                            req.getItemType(),
+                                            req.getDescription(),
+                                            req.getPickupDate(),
+                                            req.getStatus(),
+                                            req.getCustomer().getEmail(),
+                                            req.getTransporter() != null ? req.getTransporter().getEmail() : null,
+                                            req.getCustomer().getFullName(),
+                                            req.getTransporter() != null ? req.getTransporter().getFullName() : null,
+                                            req.getCancelReason(),
+                                            req.getDeclineReason() != null ? req.getDeclineReason().toString() : null,
+                                            req.getDeclineMessage(),
+                                            req.getDeclinedAt(),
+                                            req.getDeclineDismissed(),
+                                            req.getCustomer().getId(),
+                                            req.getTransporter() != null ? req.getTransporter().getId() : null,
+                                            req.getWeightKg(),
+                                            req.getRequestedAt(),
+                                            req.getAcceptedAt()))
+                            .toList();
     }
     
     public DeliveryResponseDTO updateDeliveryStatus(Long id, String newStatus) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User transporter = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Transporter not found"));
-    
-        DeliveryRequest request = deliveryRequestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Delivery not found"));
-    
-        if (!request.getTransporter().getId().equals(transporter.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
-    
-        // Optional: Add status validation
-        if (newStatus.equals("PICKED_UP") && !request.getStatus().equals("ASSIGNED")) {
-                throw new RuntimeException("Invalid status transition");
-        }
-        
-        if (newStatus.equals("DELIVERED") && 
-         !request.getStatus().equals("PICKED_UP") && 
-         !request.getStatus().equals("IN_TRANSIT")) {
-        throw new RuntimeException("Invalid status transition");
-        }
+    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    User transporter = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Transporter not found"));
 
-        // ✅ Record timestamps
-        if (newStatus.equals("ASSIGNED")) {
-          request.setAssignedAt(LocalDateTime.now());
-        } else if (newStatus.equals("DELIVERED")) {
-          request.setDeliveredAt(LocalDateTime.now()); // You can rename this to deliveredAt if you want more clarity
-        }
-    
-        request.setStatus(newStatus);
-        DeliveryRequest updated = deliveryRequestRepository.save(request);
-    
-        return new DeliveryResponseDTO(
-                updated.getId(),
-                updated.getPickupCity(),
-                updated.getDropoffCity(),
-                updated.getItemType(),
-                updated.getDescription(),
-                updated.getPickupDate(),
-                updated.getStatus(),
-                updated.getCustomer().getEmail(),
-                updated.getTransporter() != null ? updated.getTransporter().getEmail() : null,
-                updated.getCustomer().getFullName(),
-                updated.getTransporter() != null ? updated.getTransporter().getFullName() : null,
-                updated.getCancelReason(),
-                updated.getDeclineReason() != null ? updated.getDeclineReason().toString() : null,
-                updated.getDeclineMessage(),
-                updated.getDeclinedAt(),
-                updated.getDeclineDismissed(),
-                updated.getCustomer().getId(),
-                updated.getTransporter() != null ? updated.getTransporter().getId() : null,
-                updated.getWeightKg(),
-                updated.getRequestedAt(),
-                updated.getAcceptedAt()
-        );
+    DeliveryRequest request = deliveryRequestRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Delivery not found"));
+
+    if (request.getTransporter() == null || !request.getTransporter().getId().equals(transporter.getId())) {
+        throw new RuntimeException("Unauthorized");
+    }
+
+    final String current = request.getStatus();
+    final String target = newStatus.toUpperCase();
+
+    // Disallow setting ASSIGNED from here – only accept endpoints set this.
+    if ("ASSIGNED".equals(target)) {
+        throw new RuntimeException("Invalid status transition");
+    }
+
+    // Allowed transitions
+    boolean allowed =
+            ("ASSIGNED".equals(current)   && "PICKED_UP".equals(target)) ||
+            ("PICKED_UP".equals(current)  && ("IN_TRANSIT".equals(target) || "DELIVERED".equals(target))) ||
+            ("IN_TRANSIT".equals(current) && "DELIVERED".equals(target));
+
+    if (!allowed) {
+        throw new RuntimeException("Invalid status transition");
+    }
+
+    // Timestamps (only those you really have in the entity)
+    if ("DELIVERED".equals(target)) {
+        request.setDeliveredAt(LocalDateTime.now());
+    }
+
+    request.setStatus(target);
+    DeliveryRequest updated = deliveryRequestRepository.save(request);
+
+    return new DeliveryResponseDTO(
+            updated.getId(),
+            updated.getPickupCity(),
+            updated.getDropoffCity(),
+            updated.getItemType(),
+            updated.getDescription(),
+            updated.getPickupDate(),
+            updated.getStatus(),
+            updated.getCustomer().getEmail(),
+            updated.getTransporter() != null ? updated.getTransporter().getEmail() : null,
+            updated.getCustomer().getFullName(),
+            updated.getTransporter() != null ? updated.getTransporter().getFullName() : null,
+            updated.getCancelReason(),
+            updated.getDeclineReason() != null ? updated.getDeclineReason().toString() : null,
+            updated.getDeclineMessage(),
+            updated.getDeclinedAt(),
+            updated.getDeclineDismissed(),
+            updated.getCustomer().getId(),
+            updated.getTransporter() != null ? updated.getTransporter().getId() : null,
+            updated.getWeightKg(),
+            updated.getRequestedAt(),
+            updated.getAcceptedAt()
+    );
 }
+
+    
+//     public DeliveryResponseDTO updateDeliveryStatus(Long id, String newStatus) {
+//         String email = SecurityContextHolder.getContext().getAuthentication().getName();
+//         User transporter = userRepository.findByEmail(email)
+//                 .orElseThrow(() -> new RuntimeException("Transporter not found"));
+    
+//         DeliveryRequest request = deliveryRequestRepository.findById(id)
+//                 .orElseThrow(() -> new RuntimeException("Delivery not found"));
+    
+//         if (!request.getTransporter().getId().equals(transporter.getId())) {
+//             throw new RuntimeException("Unauthorized");
+//         }
+    
+//         // Optional: Add status validation
+//         if (newStatus.equals("PICKED_UP") && !request.getStatus().equals("ASSIGNED")) {
+//                 throw new RuntimeException("Invalid status transition");
+//         }
+        
+//         if (newStatus.equals("DELIVERED") && 
+//          !request.getStatus().equals("PICKED_UP") && 
+//          !request.getStatus().equals("IN_TRANSIT")) {
+//         throw new RuntimeException("Invalid status transition");
+//         }
+
+//         // ✅ Record timestamps
+//         if (newStatus.equals("ASSIGNED")) {
+//           request.setAssignedAt(LocalDateTime.now());
+//         } else if (newStatus.equals("DELIVERED")) {
+//           request.setDeliveredAt(LocalDateTime.now()); // You can rename this to deliveredAt if you want more clarity
+//         }
+    
+//         request.setStatus(newStatus);
+//         DeliveryRequest updated = deliveryRequestRepository.save(request);
+    
+//         return new DeliveryResponseDTO(
+//                 updated.getId(),
+//                 updated.getPickupCity(),
+//                 updated.getDropoffCity(),
+//                 updated.getItemType(),
+//                 updated.getDescription(),
+//                 updated.getPickupDate(),
+//                 updated.getStatus(),
+//                 updated.getCustomer().getEmail(),
+//                 updated.getTransporter() != null ? updated.getTransporter().getEmail() : null,
+//                 updated.getCustomer().getFullName(),
+//                 updated.getTransporter() != null ? updated.getTransporter().getFullName() : null,
+//                 updated.getCancelReason(),
+//                 updated.getDeclineReason() != null ? updated.getDeclineReason().toString() : null,
+//                 updated.getDeclineMessage(),
+//                 updated.getDeclinedAt(),
+//                 updated.getDeclineDismissed(),
+//                 updated.getCustomer().getId(),
+//                 updated.getTransporter() != null ? updated.getTransporter().getId() : null,
+//                 updated.getWeightKg(),
+//                 updated.getRequestedAt(),
+//                 updated.getAcceptedAt()
+//         );
+// }
     
     public List<DeliveryResponseDTO> trackCustomerDeliveries() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User customer = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     
-        List<DeliveryRequest> requests = deliveryRequestRepository.findByCustomerAndStatusIn(customer, List.of("ASSIGNED", "PICKED_UP", "DELIVERED"));
+        List<DeliveryRequest> requests = deliveryRequestRepository.findByCustomerAndStatusIn(customer, List.of("ASSIGNED", "PICKED_UP", "IN_TRANSIT", "DELIVERED"));
     
         return requests.stream()
                 .map(req -> new DeliveryResponseDTO(
@@ -396,11 +464,12 @@ public class DeliveryService {
 
 
     public DeliveryResponseDTO declineRequest(Long requestId, DeclineRequestDTO declineDTO) {
-            DeliveryRequest request = deliveryRequestRepository.findById(requestId)
-                            .orElseThrow(() -> new RuntimeException("Delivery request not found"));
+            DeliveryRequest request = deliveryRequestRepository.findById(requestId).orElseThrow(() -> new RuntimeException("Delivery request not found"));
 
-            if (!"PENDING".equals(request.getStatus()) && !"ASSIGNED".equals(request.getStatus())) {
-                    throw new RuntimeException("Can only decline pending or assigned delivery requests");
+            if (!"PENDING".equals(request.getStatus())
+                && !"ASSIGNED".equals(request.getStatus())
+                && !"REQUESTED".equals(request.getStatus())) {
+                    throw new RuntimeException("Can only decline pending, requested or assigned delivery requests");
             }
 
             User currentUser = securityUtils.getCurrentUser();
@@ -447,8 +516,7 @@ public class DeliveryService {
             User customer = userRepository.findByEmail(email)
                             .orElseThrow(() -> new RuntimeException("User not found"));
 
-            DeliveryRequest request = deliveryRequestRepository.findById(deliveryId)
-                            .orElseThrow(() -> new RuntimeException("Delivery not found"));
+            DeliveryRequest request = deliveryRequestRepository.findById(deliveryId).orElseThrow(() -> new RuntimeException("Delivery not found"));
 
             // Verify this delivery belongs to the current customer
             if (!request.getCustomer().getId().equals(customer.getId())) {
@@ -519,20 +587,18 @@ public class DeliveryService {
     public List<DeliveryApplicationDTO> getDeliveryApplications(Long deliveryId) {
             User customer = securityUtils.getCurrentUser();
 
-            DeliveryRequest deliveryRequest = deliveryRequestRepository.findById(deliveryId)
-                            .orElseThrow(() -> new RuntimeException("Delivery not found"));
+            DeliveryRequest deliveryRequest = deliveryRequestRepository.findById(deliveryId).orElseThrow(() -> new RuntimeException("Delivery not found"));
 
             // Verify this delivery belongs to the customer
             if (!deliveryRequest.getCustomer().getId().equals(customer.getId())) {
                     throw new RuntimeException("Unauthorized");
             }
 
-            List<DeliveryApplication> applications = deliveryApplicationRepository
-                            .findByDeliveryRequest(deliveryRequest);
+            List<DeliveryApplication> applications = deliveryApplicationRepository.findByDeliveryRequest(deliveryRequest);
 
             return applications.stream()
-                            .map(this::mapToApplicationDTO)
-                            .toList();
+                               .map(this::mapToApplicationDTO)
+                               .toList();
     }
 
     public DeliveryResponseDTO acceptApplication(Long applicationId) {
@@ -587,8 +653,7 @@ public class DeliveryService {
                             savedDelivery.getCustomer().getFullName(),
                             savedDelivery.getTransporter() != null ? savedDelivery.getTransporter().getFullName() : null,
                             savedDelivery.getCancelReason(),
-                            savedDelivery.getDeclineReason() != null ? savedDelivery.getDeclineReason().toString()
-                                            : null,
+                            savedDelivery.getDeclineReason() != null ? savedDelivery.getDeclineReason().toString() : null,
                             savedDelivery.getDeclineMessage(),
                             savedDelivery.getDeclinedAt(),
                             savedDelivery.getDeclineDismissed(),
@@ -656,8 +721,8 @@ public class DeliveryService {
             List<DeliveryApplication> applications = deliveryApplicationRepository.findByTransporter(transporter);
 
             return applications.stream()
-                            .map(this::mapToApplicationDTO)
-                            .toList();
+                               .map(this::mapToApplicationDTO)
+                               .toList();
     }
 
         @Transactional
