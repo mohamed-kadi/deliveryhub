@@ -722,7 +722,7 @@ const CustomerDashboard = () => {
                   label: 'Assigned', 
                   count: myDeliveries.filter(d => d.status === 'ASSIGNED').length 
                 },
-                                { 
+                { 
                   key: 'DECLINED', 
                   label: 'Declined', 
                   count: myDeliveries.filter(d => d.status === 'DECLINED').length 

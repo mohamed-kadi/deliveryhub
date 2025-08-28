@@ -69,7 +69,7 @@ public class DeliveryController {
         
         try {
             DeliveryRequest delivery = deliveryService.acceptDeliveryRequest(deliveryId, transporter.getId());
-            return ResponseEntity.ok("Delivery request accepted successfully");
+            return ResponseEntity.ok("Delivery " + delivery.getId() + " accepted successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

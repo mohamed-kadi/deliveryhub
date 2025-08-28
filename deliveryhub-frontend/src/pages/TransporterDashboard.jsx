@@ -748,6 +748,20 @@ const TransporterDashboard = () => {
                     }
                   }}
                   pricing={pricingExists ? calculateDisplayEarnings(delivery) : null}
+
+                  // ⬅️ added: needed for hover card
+                  onMouseMove={(e) => setMousePosition({ x: e.clientX, y: e.clientY })}
+                  hoveredCustomer={hoveredCustomer}
+                  onCustomerHover={setHoveredCustomer}
+                  customerRatingCard={
+                    hoveredCustomer === delivery.id && delivery.customerId && (
+                      <CustomerRatingCard
+                        customerId={delivery.customerId}
+                        customerEmail={delivery.customerEmail}
+                        mousePosition={mousePosition}
+                      />
+                    )
+                  }
                 />
               ))
             ) : (

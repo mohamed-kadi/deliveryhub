@@ -2,7 +2,6 @@ package com.example.deliveryhub.config;
 
 import com.example.deliveryhub.auth.CustomUserDetailsService;
 import com.example.deliveryhub.auth.JwtAuthFilter;
-import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.AuthenticationManager;
